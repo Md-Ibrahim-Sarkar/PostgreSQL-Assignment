@@ -23,7 +23,7 @@ CREATE Table sightings (
   ranger_id INT REFERENCES rangers(id),
   species_id INT REFERENCES species(id),
   location VARCHAR(100) NOT NULL,
-  sighting_time TIMESTAMP NOT NULL,
+  sighting_time DATE NOT NULL,
   notes TEXT DEFAULT NULL
 );
 
@@ -45,6 +45,7 @@ VALUES
 
 
 SELECT * FROM rangers;
+
 
 
 INSERT INTO species (common_name, scientific_name, discovery_date, conservation_status)
@@ -73,8 +74,6 @@ VALUES
   (8, 1, 'Wetland Fringe', '2024-06-03 12:00:00', 'Hive discovered nearby');
 
 
-
-  SELECT * FROM sightings
 -- 1.  Register a new ranger with provided data with name = 'Derek Fox' and region = 'Coastal Plains'
 
 INSERT INTO rangers (name, contact_info, region) 
@@ -113,8 +112,6 @@ LIMIT 2;
 
 -- 7. Update all species discovered before year 1800 to have status 'Historic'.
 
-SELECT * FROM species
-
 UPDATE species
 SET conservation_status = 'Historic'
 WHERE discovery_date < '1800-01-01';
@@ -139,6 +136,3 @@ DELETE FROM rangers
 WHERE id NOT IN (
   SELECT  ranger_id FROM sightings
 );
-
-
-SELECT * FROM rangers;
