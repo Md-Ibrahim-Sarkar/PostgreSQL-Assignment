@@ -1,47 +1,45 @@
--- Active: 1747416600259@@127.0.0.1@5432@assignment
+-- Active: 1747416600259@@127.0.0.1@5432@assignment_2
 
-create DATABASE Assignment;
+create DATABASE ASSIGNMENT_2
 
-CREATE Table rangers (
-  id SERIAL PRIMARY KEY,
+
+CREATE TABLE rangers (
+  ranger_id SERIAL PRIMARY KEY,
   name VARCHAR(50) NOT NULL,
-  contact_info VARCHAR(100) NOT NULL,
   region VARCHAR(50)
 );
 
-
-CREATE Table species (
-  id SERIAL PRIMARY KEY,
+CREATE TABLE species (
+  species_id SERIAL PRIMARY KEY,
   common_name VARCHAR(50) NOT NULL,
   scientific_name VARCHAR(100) NOT NULL,
   discovery_date DATE NOT NULL,
-  conservation_status VARCHAR(50) 
+  conservation_status VARCHAR(50)
 );
 
-CREATE Table sightings (
-  id SERIAL PRIMARY KEY,
-  ranger_id INT REFERENCES rangers(id),
-  species_id INT REFERENCES species(id),
+CREATE TABLE sightings (
+  sighting_id SERIAL PRIMARY KEY,
+  species_id INT REFERENCES species(species_id),
+  ranger_id INT REFERENCES rangers(ranger_id),
   location VARCHAR(100) NOT NULL,
-  sighting_time DATE NOT NULL,
+  sighting_time TIMESTAMP NOT NULL,
   notes TEXT DEFAULT NULL
 );
 
 
-INSERT INTO rangers (name, contact_info, region)
+
+INSERT INTO rangers (name, region)
 VALUES
-  ('Alice Green', 'alice.green@example.com', 'Northern Hills'),
-  ('Bob White', 'bob.white@example.com', 'River Delta'),
-  ('Carol King', 'carol.king@example.com', 'Mountain Range'),
-  ('Derek Fox', 'derek.fox@example.com', 'Coastal Plains'),
-  ('Eva Stone', 'eva.stone@example.com', 'Rainforest Edge'),
-  ('Frank Black', 'frank.black@example.com', 'Highland Peaks'),
-  ('Grace Moon', 'grace.moon@example.com', 'Desert Outskirts'),
-  ('Henry Wood', 'henry.wood@example.com', 'Wetland Zone'),
-  ('Isla Dawn', 'isla.dawn@example.com', 'Grassland South'),
-  ('Jack Storm', 'jack.storm@example.com', 'Canyon Watch');
-
-
+  ('Alice Green', 'Northern Hills'),
+  ('Bob White',  'River Delta'),
+  ('Carol King', 'Mountain Range'),
+  ('Derek Fox', 'Coastal Plains'),
+  ('Eva Stone', 'Rainforest Edge'),
+  ('Frank Black', 'Highland Peaks'),
+  ('Grace Moon', 'Desert Outskirts'),
+  ('Henry Wood', 'Wetland Zone'),
+  ('Isla Dawn',  'Grassland South'),
+  ('Jack Storm',  'Canyon Watch');
 
 
 SELECT * FROM rangers;
@@ -54,6 +52,7 @@ VALUES
   ('Bengal Tiger', 'Panthera tigris tigris', '1758-01-01', 'Endangered'),
   ('Red Panda', 'Ailurus fulgens', '1825-01-01', 'Vulnerable'),
   ('Asiatic Elephant', 'Elephas maximus indicus', '1758-01-01', 'Endangered');
+
 
 
 
@@ -74,10 +73,19 @@ VALUES
   (8, 1, 'Wetland Fringe', '2024-06-03 12:00:00', 'Hive discovered nearby');
 
 
+
+SELECT * FROM sightings;
+
+
+
+
+
+
 -- 1.  Register a new ranger with provided data with name = 'Derek Fox' and region = 'Coastal Plains'
 
-INSERT INTO rangers (name, contact_info, region) 
-   VALUES('Derek Fox', 'demo@gmail.com', 'Coastal Plains');
+INSERT INTO rangers (name, region) 
+   VALUES('Derek Fox', 'Coastal Plains');
+
 
 -- 2. Count unique species ever sighted.
 
@@ -91,27 +99,28 @@ SELECT * FROM sightings
 
 -- 4.  List each ranger's name and their total number of sightings.
 
-
-SELECT rangers.name AS ranger_name, COUNT(sightings.id) AS total_num_of_sightings FROM sightings
-JOIN rangers ON sightings.ranger_id = rangers.id
+SELECT rangers.name, COUNT(sightings.sighting_id) AS total_sightings
+FROM rangers
+LEFT JOIN sightings ON rangers.ranger_id = sightings.ranger_id
 GROUP BY rangers.name;
 
-
 -- 5.  List species that have never been sighted.
+SELECT species.common_name FROM species
+LEFT JOIN sightings ON species.species_id = sightings.species_id
+WHERE sightings.sighting_id IS NULL;;
 
-SELECT * FROM species
-WHERE id NOT IN (SELECT species_id FROM sightings);
 
 
 -- 6.  Show the most recent 2 sightings.
-
-SELECT * FROM sightings
-ORDER BY sighting_time DESC
+SELECT sp.common_name, si.sighting_time, r.name
+FROM sightings AS si
+JOIN species AS sp ON si.species_id = sp.species_id
+JOIN rangers AS r ON si.ranger_id = r.ranger_id
+ORDER BY si.sighting_time DESC
 LIMIT 2;
 
 
 -- 7. Update all species discovered before year 1800 to have status 'Historic'.
-
 UPDATE species
 SET conservation_status = 'Historic'
 WHERE discovery_date < '1800-01-01';
@@ -120,19 +129,22 @@ WHERE discovery_date < '1800-01-01';
 
 -- 8. Label each sighting's time of day as 'Morning', 'Afternoon', or 'Evening'.
 
-SELECT id, ranger_id, species_id, location, sighting_time, notes,
+SELECT sighting_id,
   CASE
-    WHEN EXTRACT(HOUR FROM sighting_time) BETWEEN 5 AND 11 THEN 'Morning'
-    WHEN EXTRACT(HOUR FROM sighting_time) BETWEEN 12 AND 16 THEN 'Afternoon'
-    WHEN EXTRACT(HOUR FROM sighting_time) BETWEEN 17 AND 20 THEN 'Evening'
-    ELSE 'Night'
+    WHEN EXTRACT(HOUR FROM sighting_time) < 12 THEN 'Morning'
+    WHEN EXTRACT(HOUR FROM sighting_time) BETWEEN 12 AND 17 THEN 'Afternoon'
+    ELSE 'Evening'
   END AS time_of_day
 FROM sightings;
 
 
 -- 9. Delete rangers who have never sighted any species
 
+
 DELETE FROM rangers
-WHERE id NOT IN (
-  SELECT  ranger_id FROM sightings
+WHERE ranger_id IN (
+  SELECT r.ranger_id
+  FROM rangers AS r
+  LEFT JOIN sightings AS s ON r.ranger_id = s.ranger_id
+  WHERE s.ranger_id IS NULL
 );
